@@ -1,0 +1,39 @@
+/* Dashboard V6 UI patch. Existing admin.css remains untouched. */
+body.admin-mode{padding-left:230px}
+#admin.hide{display:none!important}
+body:not(.admin-mode) #admin{display:none!important}
+body:not(.admin-mode) .admin-sidebar,body:not(.admin-mode) .mobile-sidebar-toggle{display:none!important}
+.admin-sidebar{position:fixed;left:0;top:0;bottom:0;width:230px;z-index:1200;background:linear-gradient(180deg,#071421,#08111e 70%,#061018);border-right:1px solid rgba(255,255,255,.08);padding:18px 12px;display:flex;flex-direction:column;gap:14px;box-shadow:12px 0 40px rgba(0,0,0,.18)}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:4px 5px 12px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sidebar-logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#28d17c,#3d8cff);color:#03120a;font-weight:900}
+.sidebar-brand b{display:block;font-size:13px}.sidebar-brand small{display:block;color:var(--muted,#8ea1b4);font-size:8px;margin-top:2px}
+.sidebar-nav{display:grid;gap:5px;overflow:auto}.sidebar-nav button,.sidebar-customize{border:0;background:transparent;color:#a9bdd0;border-radius:12px;padding:10px 11px;display:flex;gap:10px;align-items:center;text-align:left;font-size:10px;font-weight:700;cursor:pointer}.sidebar-nav button:hover,.sidebar-customize:hover{background:rgba(41,209,124,.11);color:#fff}.sidebar-customize{margin-top:auto;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025)}
+.section-hidden-v6{display:none!important}
+.customize-card{width:min(620px,94vw)}.customize-list{display:grid;gap:7px;margin:12px 0;max-height:55vh;overflow:auto}.customize-item{display:grid;grid-template-columns:auto 1fr auto auto auto;align-items:center;gap:8px;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:14px;background:#0a1728;padding:9px}.customize-item .drag{cursor:grab;color:#8299ae;font-size:16px;user-select:none}.customize-item b{font-size:10px}.customize-item button{border:1px solid var(--line,rgba(255,255,255,.1));border-radius:9px;background:#12243a;color:#fff;padding:6px 8px;font-size:9px;cursor:pointer}.customize-item .visibility.off{color:#ff9aa2;background:rgba(255,90,103,.08)}.customize-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.mobile-sidebar-toggle{display:none;position:fixed;left:12px;top:12px;z-index:1300;width:42px;height:42px;border-radius:13px;border:1px solid var(--line,rgba(255,255,255,.1));background:#0d1c2e;color:#fff;font-size:18px}
+@media(max-width:900px){body.admin-mode{padding-left:0}.admin-sidebar{transform:translateX(-105%);transition:.22s ease;width:min(260px,82vw)}.admin-sidebar.open{transform:translateX(0)}body.admin-mode .mobile-sidebar-toggle{display:block}#admin{padding-top:48px}}
+
+/* V6 layout guards */
+body.admin-mode > main.wrap{
+  width:min(1180px, calc(100vw - 230px));
+  max-width:1180px;
+  margin-left:auto;
+  margin-right:auto;
+}
+body.admin-mode #admin{
+  width:100%;
+}
+body.admin-mode #adminSidebar{
+  display:flex;
+}
+body.admin-mode .admin-header{
+  margin-top:0;
+}
+@media(max-width:900px){
+  body.admin-mode > main.wrap{
+    width:100%;
+    max-width:100%;
+    padding-left:14px;
+    padding-right:14px;
+  }
+}
