@@ -1,0 +1,143 @@
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const cfg=window.HK_SUPABASE||{};
+const ready=cfg.url && cfg.anonKey && !cfg.anonKey.includes("PASTE_");
+const sb=ready?supabase.createClient(cfg.url,cfg.anonKey):null;
+// Public reader intentionally stays anonymous.
+// This lets Admin load the same Highlights/Gallery rows that are visible on the public profile,
+// while all Update/Delete actions still use the authenticated `sb` client.
+const publicSb=ready?supabase.createClient(cfg.url,cfg.anonKey,{
+  auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+}):null;
+let settingsId=null, settingsData=null, highlights=[], storyToHighlight=null, previewObjectUrl=null;
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function setMsg(id,t,err=false){const e=$(id);if(!e)return;e.textContent=t||"";e.style.color=err?"#ff939a":""}
+function safeName(name){return `${Date.now()}-${Math.random().toString(36).slice(2)}-${name.replace(/[^a-zA-Z0-9._-]/g,"_")}`}
+function fmt(v){try{return new Date(v).toLocaleString()}catch{return v}}
+function remaining(expires){const ms=new Date(expires)-Date.now();if(ms<=0)return"Expired";const h=Math.ceil(ms/3600000);return h<24?`${h}h left`:`${Math.ceil(h/24)}d left`}
+function durationMs(){const p=$("#durationPreset").value;if(p==="24h")return 86400000;if(p==="3d")return 3*86400000;if(p==="5d")return 5*86400000;if(p==="7d")return 7*86400000;const n=Math.max(1,Number($("#customDuration").value)||1);return $("#customDurationUnit").value==="days"?n*86400000:n*3600000}
+async function uploadFile(file,folder){if(!file)return null;const path=`${folder}/${safeName(file.name)}`;const {error}=await sb.storage.from(cfg.bucket).upload(path,file,{cacheControl:"3600"});if(error)throw error;return sb.storage.from(cfg.bucket).getPublicUrl(path).data.publicUrl}
+
+async function checkSession(){if(!ready)return setMsg("#loginMsg","Supabase key missing.",true);const {data:{session}}=await sb.auth.getSession();if(session&&session.user?.email===cfg.adminEmail)showAdmin()}
+$("#loginBtn").onclick=async()=>{const {data,error}=await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});if(error)return setMsg("#loginMsg",error.message,true);if(data.user?.email!==cfg.adminEmail){await sb.auth.signOut();return setMsg("#loginMsg","Not allowed",true)}showAdmin()}
+async function showAdmin(){$("#loginBox").classList.add("hide");$("#admin").classList.remove("hide");await refreshAll()}
+$("#logoutBtn").onclick=async()=>{await sb.auth.signOut();location.reload()}
+$("#refreshBtn").onclick=async()=>refreshAll()
+$$("[data-scroll]").forEach(b=>b.onclick=()=>$(b.dataset.scroll)?.scrollIntoView({behavior:"smooth"}));
+
+async function refreshAll(){await Promise.all([loadProfileSettings(),loadMusic(),loadStories(),loadHighlights(),loadGallery(),loadLinks(),loadMessages(),loadStats()])}
+
+async function loadProfileSettings(){
+  const {data,error}=await sb.from("profile_settings").select("*").order("id").limit(1).maybeSingle();
+  if(error)return setMsg("#profileMsg",error.message,true);
+  settingsData=data||{};settingsId=data?.id||null;
+  $("#note").value=data?.note||"";
+  $("#profileStatus").value=data?.profile_status||"Available";
+  $("#announcementText").value=data?.announcement_text||"";
+  $("#announcementEnabled").checked=!!data?.announcement_enabled;
+  $("#noteCount").textContent=`${$("#note").value.length}/100`;
+}
+async function saveProfilePayload(payload){
+  payload.updated_at=new Date().toISOString();
+  let r=settingsId?await sb.from("profile_settings").update(payload).eq("id",settingsId).select().single():await sb.from("profile_settings").insert(payload).select().single();
+  if(r.error)throw r.error;settingsId=r.data.id;settingsData=r.data;
+}
+$("#note").oninput=()=>$("#noteCount").textContent=`${$("#note").value.length}/100`;
+$("#saveProfileSettings").onclick=async()=>{
+  try{await saveProfilePayload({note:$("#note").value.trim(),profile_status:$("#profileStatus").value,announcement_text:$("#announcementText").value.trim()||null,announcement_enabled:$("#announcementEnabled").checked,music_title:settingsData?.music_title||"Favourite Music",music_url:settingsData?.music_url||null});setMsg("#profileMsg","Profile settings saved ✅")}catch(e){setMsg("#profileMsg",e.message,true)}
+};
+
+async function loadMusic(){
+  const {data,error}=await sb.from("music_playlist").select("*").order("sort_order").order("created_at");
+  if(error){$("#musicList").innerHTML=`<div class="notice-box">${esc(error.message)} — Run upgrade-v3.sql first.</div>`;return}
+  const rows=data||[];$("#musicCountLabel").textContent=`${rows.length} songs`;
+  $("#musicList").innerHTML=rows.map(m=>`<div class="data-card"><div class="thumb">♫</div><div class="data-main"><b>${esc(m.title)}</b><small>${m.clip_seconds}s clip • ${m.enabled?"Enabled":"Disabled"}</small></div><div class="data-actions"><button class="mini-btn save" onclick="updateMusic('${m.id}',${m.clip_seconds},${m.enabled})">Update</button><button class="mini-btn delete" onclick="deleteMusic('${m.id}')">Delete</button></div></div>`).join("")||'<div class="notice-box">No playlist songs yet.</div>';
+}
+$("#addMusicBtn").onclick=async()=>{
+  const f=$("#musicFile").files[0];if(!f)return setMsg("#musicMsg","Audio file choose karein.",true);
+  try{setMsg("#musicMsg","Uploading music...");const url=await uploadFile(f,"music");const title=$("#musicTitle").value.trim()||f.name.replace(/\.[^.]+$/,"");const {error}=await sb.from("music_playlist").insert({title,media_url:url,clip_seconds:Number($("#musicClipSeconds").value)});if(error)throw error;$("#musicFile").value="";$("#musicTitle").value="";setMsg("#musicMsg","Music added ✅");loadMusic()}catch(e){setMsg("#musicMsg",e.message,true)}
+};
+window.updateMusic=async(id,clip,enabled)=>{const title=prompt("Song title update karein (blank = same):","");const sec=Number(prompt("Clip seconds 30 se 60:",String(clip)));if(!Number.isFinite(sec)||sec<30||sec>60)return alert("30-60 sec allowed");const payload={clip_seconds:sec,enabled};if(title)payload.title=title;const {error}=await sb.from("music_playlist").update(payload).eq("id",id);if(error)return alert(error.message);loadMusic()}
+window.deleteMusic=async id=>{if(!confirm("Delete this song?"))return;const {error}=await sb.from("music_playlist").delete().eq("id",id);if(error)return alert(error.message);loadMusic()}
+
+$("#storyStartMode").onchange=()=>$("#storyScheduleBox").classList.toggle("hide",$("#storyStartMode").value!=="schedule");
+$("#durationPreset").onchange=()=>{const c=$("#durationPreset").value==="custom";$("#customDurationBox").classList.toggle("hide",!c);$("#customDurationUnitBox").classList.toggle("hide",!c)};
+function storyStart(){if($("#storyStartMode").value==="now")return new Date();const v=$("#storyStartAt").value;if(!v)return null;return new Date(v)}
+function updateStoryPreview(){if(previewObjectUrl){URL.revokeObjectURL(previewObjectUrl);previewObjectUrl=null}const type=$("#storyType").value,file=$("#storyFile").files[0],box=$("#storyPreview");if(type==="text"){box.innerHTML=`<div class="text-story-preview"><div><div class="emoji">${esc($("#storyEmoji").value||"✨")}</div><p>${esc($("#storyText").value||"Story preview")}</p></div></div>`;return}if(!file){box.innerHTML='<div class="preview-placeholder"><span>◉</span><b>Story Preview</b><small>Select image/video file</small></div>';return}previewObjectUrl=URL.createObjectURL(file);box.innerHTML=type==="video"?`<video src="${previewObjectUrl}" controls muted></video>`:`<img src="${previewObjectUrl}">`}
+$("#storyType").onchange=updateStoryPreview;$("#storyFile").onchange=updateStoryPreview;$("#storyText").oninput=updateStoryPreview;$("#storyEmoji").oninput=updateStoryPreview;
+
+async function loadStories(){
+  const {data,error}=await sb.from("stories").select("*").order("created_at",{ascending:false});
+  if(error){$("#storyList").innerHTML=`<div class="notice-box">${esc(error.message)}</div>`;return}
+  const rows=data||[],now=Date.now(),current=rows.filter(s=>new Date(s.expires_at)>now),expired=rows.filter(s=>new Date(s.expires_at)<=now);
+  $("#dashStories").textContent=current.filter(s=>new Date(s.starts_at||s.created_at)<=now).length;
+  $("#storyCountLabel").textContent=`${current.length} stories`;
+  $("#storyList").innerHTML=current.map(s=>storyCard(s,false)).join("")||'<div class="notice-box">No current stories.</div>';
+  $("#archiveList").innerHTML=expired.map(s=>storyCard(s,true)).join("")||'<div class="notice-box">No expired stories yet.</div>';
+}
+function storyCard(s,archived){const start=new Date(s.starts_at||s.created_at),scheduled=start>Date.now(),thumb=s.type==="image"&&s.media_url?`<img src="${esc(s.media_url)}">`:s.type==="video"&&s.media_url?`<video src="${esc(s.media_url)}"></video>`:esc(s.emoji||"✨");return `<div class="data-card"><div class="thumb">${thumb}</div><div class="data-main"><b>${archived?"ARCHIVED":scheduled?"SCHEDULED":"ACTIVE"} • ${esc(s.type.toUpperCase())}</b><small>${scheduled?`Starts ${fmt(start)}`:archived?`Expired ${fmt(s.expires_at)}`:remaining(s.expires_at)}</small></div><div class="data-actions">${!archived?`<button class="mini-btn save" onclick="openStoryHighlight('${s.id}')">★ Highlight</button>`:""}<button class="mini-btn delete" onclick="deleteStory('${s.id}')">Delete</button></div></div>`}
+$("#addStory").onclick=async()=>{
+  try{const type=$("#storyType").value;let media_url=null;if(type!=="text"){const f=$("#storyFile").files[0];if(!f)return setMsg("#storyMsg","File choose karein.",true);media_url=await uploadFile(f,"stories")}if(type==="text"&&!$("#storyText").value.trim())return setMsg("#storyMsg","Text likhein.",true);const start=storyStart();if(!start||isNaN(start))return setMsg("#storyMsg","Valid schedule time choose karein.",true);const expires=new Date(start.getTime()+durationMs());const {error}=await sb.from("stories").insert({type,media_url,story_text:$("#storyText").value.trim()||null,emoji:$("#storyEmoji").value.trim()||"✨",starts_at:start.toISOString(),expires_at:expires.toISOString()});if(error)throw error;$("#storyFile").value="";$("#storyText").value="";updateStoryPreview();setMsg("#storyMsg",$("#storyStartMode").value==="schedule"?"Story scheduled ✅":"Story published ✅");loadStories()}catch(e){setMsg("#storyMsg",e.message,true)}
+};
+window.deleteStory=async id=>{if(!confirm("Delete story?"))return;const {error}=await sb.from("stories").delete().eq("id",id);if(error)return alert(error.message);loadStories()}
+
+async function loadHighlights(){const {data,error}=await publicSb.from("highlights").select("*,highlight_items(*)").order("created_at");if(error){$("#highlightList").innerHTML=`<div class="notice-box">${esc(error.message)}</div>`;return;}highlights=data||[];$("#dashHighlights").textContent=highlights.length;$("#highlightCountLabel").textContent=`${highlights.length} highlights`;$("#highlightList").innerHTML=highlights.map(h=>`<div class="data-card"><div class="thumb">${h.cover_url?`<img src="${esc(h.cover_url)}">`:esc(h.emoji||"⭐")}</div><div class="data-main"><b>${esc(h.name)}</b><small>${(h.highlight_items||[]).length} item(s)</small></div><div class="data-actions"><button class="mini-btn save" onclick="updateHighlight('${h.id}','${esc(h.name).replace(/'/g,"&#39;")}','${esc(h.emoji||"⭐")}')">Update</button><button class="mini-btn delete" onclick="deleteHighlight('${h.id}')">Delete</button></div></div>`).join("")||'<div class="notice-box">No highlights.</div>';$("#storyHighlightSelect").innerHTML=highlights.map(h=>`<option value="${h.id}">${esc(h.name)}</option>`).join("")}
+$("#addHighlight").onclick=async()=>{try{const name=$("#hlName").value.trim();if(!name)return alert("Name required");let cover_url=null;const f=$("#hlCover").files[0];if(f)cover_url=await uploadFile(f,"highlights");const {error}=await sb.from("highlights").insert({name,emoji:$("#hlEmoji").value.trim()||"⭐",cover_url});if(error)throw error;$("#hlName").value="";$("#hlCover").value="";loadHighlights()}catch(e){alert(e.message)}}
+window.updateHighlight=async(id,name,emoji)=>{
+  const n=prompt("Highlight name:",name); if(n===null)return;
+  const e=prompt("Emoji:",emoji); if(e===null)return;
+  const {data,error}=await sb.rpc("admin_update_highlight",{
+    p_id:id,
+    p_name:n.trim()||name,
+    p_emoji:e.trim()||emoji
+  });
+  if(error)return alert("Update failed: "+error.message);
+  if(data!==true)return alert("Update nahi hua.");
+  await loadHighlights();
+};
+
+window.deleteHighlight=async id=>{
+  if(!confirm("Delete Highlight and all items?"))return;
+  const {data,error}=await sb.rpc("admin_delete_highlight",{p_id:id});
+  if(error)return alert("Delete failed: "+error.message);
+  if(data!==true)return alert("Delete nahi hua.");
+  await loadHighlights();
+};
+window.openStoryHighlight=async id=>{if(!highlights.length)return alert("Pehle Highlight create karein.");const {data,error}=await sb.from("stories").select("*").eq("id",id).single();if(error)return alert(error.message);storyToHighlight=data;$("#highlightPicker").classList.add("open")}
+$("#closeHighlightPicker").onclick=()=>$("#highlightPicker").classList.remove("open");
+$("#confirmStoryHighlight").onclick=async()=>{if(!storyToHighlight)return;const {error}=await sb.from("highlight_items").insert({highlight_id:$("#storyHighlightSelect").value,type:storyToHighlight.type,media_url:storyToHighlight.media_url,item_text:storyToHighlight.story_text});if(error)return alert(error.message);$("#highlightPicker").classList.remove("open");storyToHighlight=null;alert("Saved to Highlight ✅");loadHighlights()}
+
+async function loadGallery(){const {data,error}=await publicSb.from("gallery").select("*").order("created_at",{ascending:false});if(error){$("#galleryList").innerHTML=`<div class="notice-box">${esc(error.message)}</div>`;return}$("#galleryList").innerHTML=(data||[]).map(g=>`<div class="gallery-tile"><img src="${esc(g.image_url)}"><button onclick="deleteGallery('${g.id}')">×</button><small>${esc((g.album_name||"Memories")+" • "+(g.caption||"No caption"))}</small><div class="tile-edit" onclick="updateGallery('${g.id}','${esc(g.album_name||"Memories").replace(/'/g,"&#39;")}','${esc(g.caption||"").replace(/'/g,"&#39;")}')">Edit</div></div>`).join("")||'<div class="notice-box">No gallery images.</div>'}
+$("#addGallery").onclick=async()=>{try{const f=$("#galleryFile").files[0];if(!f)return alert("Image choose karein");const image_url=await uploadFile(f,"gallery");const {error}=await sb.from("gallery").insert({image_url,caption:$("#galleryCaption").value.trim()||null,album_name:$("#galleryAlbum").value.trim()||"Memories"});if(error)throw error;$("#galleryFile").value="";$("#galleryCaption").value="";loadGallery()}catch(e){alert(e.message)}}
+window.updateGallery=async(id,album,caption)=>{
+  const a=prompt("Album name:",album); if(a===null)return;
+  const c=prompt("Caption:",caption); if(c===null)return;
+  const {data,error}=await sb.rpc("admin_update_gallery",{
+    p_id:id,
+    p_album:a.trim()||"Memories",
+    p_caption:c.trim()||null
+  });
+  if(error)return alert("Update failed: "+error.message);
+  if(data!==true)return alert("Update nahi hua.");
+  await loadGallery();
+};
+
+window.deleteGallery=async id=>{
+  if(!confirm("Delete gallery item?"))return;
+  const {data,error}=await sb.rpc("admin_delete_gallery",{p_id:id});
+  if(error)return alert("Delete failed: "+error.message);
+  if(data!==true)return alert("Delete nahi hua.");
+  await loadGallery();
+};
+
+async function loadLinks(){const {data,error}=await sb.from("profile_links").select("*").order("link_type").order("sort_order");if(error){$("#linksList").innerHTML=`<div class="notice-box">${esc(error.message)} — Run upgrade-v3.sql first.</div>`;return}$("#linksList").innerHTML=(data||[]).map(x=>`<div class="data-card"><div class="thumb">${esc(x.icon||"↗")}</div><div class="data-main"><b>${esc(x.title)} • ${esc(x.link_type)}</b><small>${esc(x.subtitle||"")} • ${esc(x.url)}</small></div><div class="data-actions"><button class="mini-btn save" onclick="updateLink('${x.id}')">Update</button><button class="mini-btn delete" onclick="deleteLink('${x.id}')">Delete</button></div></div>`).join("")||'<div class="notice-box">No links.</div>'}
+$("#addLinkBtn").onclick=async()=>{const p={link_type:$("#linkType").value,title:$("#linkTitle").value.trim(),subtitle:$("#linkSubtitle").value.trim()||null,url:$("#linkUrl").value.trim(),icon:$("#linkIcon").value.trim()||"↗"};if(!p.title||!p.url)return alert("Title and URL required");const {error}=await sb.from("profile_links").insert(p);if(error)return alert(error.message);$("#linkTitle").value="";$("#linkSubtitle").value="";$("#linkUrl").value="";loadLinks()}
+window.updateLink=async id=>{const {data,error}=await sb.from("profile_links").select("*").eq("id",id).single();if(error)return alert(error.message);const title=prompt("Title:",data.title);if(title===null)return;const subtitle=prompt("Subtitle:",data.subtitle||"");if(subtitle===null)return;const url=prompt("URL:",data.url);if(url===null)return;const {error:e}=await sb.from("profile_links").update({title:title.trim()||data.title,subtitle:subtitle.trim()||null,url:url.trim()||data.url}).eq("id",id);if(e)return alert(e.message);loadLinks()}
+window.deleteLink=async id=>{if(!confirm("Delete link?"))return;const {error}=await sb.from("profile_links").delete().eq("id",id);if(error)return alert(error.message);loadLinks()}
+
+async function loadMessages(){const {data,error}=await sb.from("guest_messages").select("*").order("created_at",{ascending:false}).limit(100);if(error)return;const rows=data||[];$("#messageBadge").textContent=`${rows.length} MESSAGES`;$("#messageList").innerHTML=rows.map(m=>`<div class="data-card"><div class="thumb">✉</div><div class="data-main"><b>${esc(m.message)}</b><small>${fmt(m.created_at)}</small></div><div class="data-actions"><button class="mini-btn delete" onclick="deleteMessage('${m.id}')">Delete</button></div></div>`).join("")||'<div class="notice-box">No messages.</div>'}
+window.deleteMessage=async id=>{if(!confirm("Delete message?"))return;await sb.from("guest_messages").delete().eq("id",id);loadMessages()}
+async function loadStats(){const [v,l,c]=await Promise.all([sb.from("profile_views").select("*",{count:"exact",head:true}),sb.from("profile_likes").select("*",{count:"exact",head:true}),sb.from("link_clicks").select("link_name")]);$("#dashViews").textContent=v.count??0;$("#dashLikes").textContent=l.count??0;const map={};(c.data||[]).forEach(x=>map[x.link_name]=(map[x.link_name]||0)+1);$("#statsList").innerHTML=Object.entries(map).map(([k,n])=>`<div class="data-card"><div class="thumb">↗</div><div class="data-main"><b>${esc(k)}</b></div><div>${n}</div></div>`).join("")||'<div class="notice-box">No click data.</div>'}
+
+checkSession();
