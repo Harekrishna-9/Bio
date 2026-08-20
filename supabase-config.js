@@ -5,7 +5,7 @@
 
 window.HK_SUPABASE = {
   url: "https://zdamaqjavhbfevahlnlk.supabase.co",
-  anonKey: "PASTE_YOUR_PUBLISHABLE_OR_ANON_KEY_HERE",
+  anonKey: "sb_publishable_5Xpa-l56qs5weXh87Cx8hg_1GOwr-ft",
   bucket: "bio-media",
   adminEmail: "pharekrishna09@gmail.com"
 };
