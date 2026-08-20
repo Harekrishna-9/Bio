@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <title>Harekrishna Bio Admin V4</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bio Admin">
+
+</head>
+<body>
+  <main class="wrap">
+    <section id="loginBox" class="login-card">
+      <div class="login-brand">HK</div>
+      <p class="eyebrow">SECURE ADMIN V3</p>
+      <h1>Harekrishna Bio</h1>
+      <p class="muted">Full control for profile, stories, highlights, music, gallery and links.</p>
+      <label>Email</label><input id="email" value="pharekrishna09@gmail.com" readonly>
+      <label>Password</label><input id="password" type="password" placeholder="Supabase admin password">
+      <button class="btn primary full" id="loginBtn">Login to Dashboard</button>
+      <div class="status-text" id="loginMsg"></div>
+    </section>
+
+    <section id="admin" class="hide">
+      <header class="admin-header">
+        <div>
+          <p class="eyebrow">PERSONAL SOCIAL BIO</p>
+          <h1>Admin Dashboard V4</h1>
+          <div class="live-pill"><i></i> Supabase Live</div>
+        </div>
+        <div class="header-actions">
+          <a class="btn ghost" href="index.html" target="_blank">↗ View Profile</a>
+          <button class="btn dark" id="refreshBtn">↻ Refresh</button>
+          <button class="btn ghost" id="installAppBtn">＋ Install App</button>
+          <button class="btn danger-soft" id="logoutBtn">Logout</button>
+        </div>
+      </header>
+
+      <section class="stats-grid">
+        <article><span>👁</span><div><small>PROFILE VIEWS</small><b id="dashViews">0</b></div></article>
+        <article><span>♥</span><div><small>LIKES</small><b id="dashLikes">0</b></div></article>
+        <article><span>◉</span><div><small>ACTIVE STORIES</small><b id="dashStories">0</b></div></article>
+        <article><span>✦</span><div><small>HIGHLIGHTS</small><b id="dashHighlights">0</b></div></article>
+      </section>
+
+      <nav class="quick-nav">
+        <button data-scroll="#profileControl">Profile</button>
+        <button data-scroll="#musicManager">Music</button>
+        <button data-scroll="#storyManager">Stories</button>
+        <button data-scroll="#archiveManager">Archive</button>
+        <button data-scroll="#highlightManager">Highlights</button>
+        <button data-scroll="#galleryManager">Gallery</button>
+        <button data-scroll="#linksManager">Links</button>
+        <button data-scroll="#messagesManager">Messages</button>
+      </nav>
+
+      <section class="panel" id="profileControl">
+        <div class="panel-head"><div><p class="eyebrow">PROFILE CONTROL</p><h2>Note, Status & Announcement</h2></div><span class="badge">LIVE</span></div>
+        <div class="grid-2">
+          <div class="field"><label>Daily Note <em id="noteCount">0/100</em></label><input id="note" maxlength="100" placeholder="Building something new 🚀"></div>
+          <div class="field"><label>Profile Status</label>
+            <select id="profileStatus">
+              <option>Available</option><option>Working</option><option>Busy</option><option>Offline</option><option>On a Break</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Pinned Announcement</label><input id="announcementText" maxlength="160" placeholder="New project launching soon 🚀"></div>
+        <label class="toggle-row"><input id="announcementEnabled" type="checkbox"><span>Show announcement on profile</span></label>
+        <div class="action-row"><button class="btn primary" id="saveProfileSettings">Save Profile Settings</button></div>
+        <div class="status-text" id="profileMsg"></div>
+      </section>
+
+      <section class="panel" id="musicManager">
+        <div class="panel-head"><div><p class="eyebrow">PLAYLIST</p><h2>Music Manager</h2></div><span class="badge accent">30–60 SEC</span></div>
+        <div class="grid-3">
+          <div class="field"><label>Song Title</label><input id="musicTitle" maxlength="80" placeholder="My Favourite Song"></div>
+          <div class="field"><label>Clip Time</label>
+            <select id="musicClipSeconds">
+              <option value="30">30 sec</option><option value="35">35 sec</option><option value="40">40 sec</option>
+              <option value="45">45 sec</option><option value="50">50 sec</option><option value="55">55 sec</option><option value="60">1 min</option>
+            </select>
+          </div>
+          <div class="field"><label>Audio File</label><input id="musicFile" class="file-input" type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg"></div>
+        </div>
+        <div class="action-row"><button class="btn blue" id="addMusicBtn">Upload to Playlist</button></div>
+        <div class="status-text" id="musicMsg"></div>
+        <div class="subhead"><h3>Playlist</h3><span id="musicCountLabel">0 songs</span></div>
+        <div class="cards-list" id="musicList"></div>
+      </section>
+
+      <section class="panel" id="storyManager">
+        <div class="panel-head"><div><p class="eyebrow">STORY MANAGER</p><h2>Create / Schedule Story</h2></div><span class="badge accent">CUSTOM EXPIRY</span></div>
+        <div class="grid-3">
+          <div class="field"><label>Story Type</label>
+            <select id="storyType"><option value="image">📷 Image</option><option value="video">🎬 Video</option><option value="text">✍ Text</option></select>
+          </div>
+          <div class="field"><label>Start</label>
+            <select id="storyStartMode"><option value="now">Publish Now</option><option value="schedule">Schedule Date/Time</option></select>
+          </div>
+          <div class="field hide" id="storyScheduleBox"><label>Start Date / Time</label><input id="storyStartAt" type="datetime-local"></div>
+        </div>
+        <div class="grid-3">
+          <div class="field"><label>Duration</label>
+            <select id="durationPreset"><option value="24h">24 Hours</option><option value="3d">3 Days</option><option value="5d">5 Days</option><option value="7d">7 Days</option><option value="custom">Custom</option></select>
+          </div>
+          <div class="field hide" id="customDurationBox"><label>Custom Value</label><input id="customDuration" type="number" min="1" max="365" value="1"></div>
+          <div class="field hide" id="customDurationUnitBox"><label>Unit</label><select id="customDurationUnit"><option value="hours">Hours</option><option value="days">Days</option></select></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>Emoji</label><input id="storyEmoji" value="✨" maxlength="8"></div>
+          <div class="field"><label>Story File</label><input id="storyFile" class="file-input" type="file" accept="image/*,video/*"></div>
+        </div>
+        <div class="field"><label>Story Text / Caption</label><textarea id="storyText" maxlength="300" placeholder="Write something..."></textarea></div>
+        <div class="story-preview" id="storyPreview"><div class="preview-placeholder"><span>◉</span><b>Story Preview</b><small>Select image/video or choose Text</small></div></div>
+        <div class="action-row"><button class="btn primary" id="addStory">Publish / Schedule Story</button></div>
+        <div class="status-text" id="storyMsg"></div>
+        <div class="subhead"><h3>Current Stories</h3><span id="storyCountLabel">0 stories</span></div>
+        <div class="cards-list" id="storyList"></div>
+      </section>
+
+      <section class="panel" id="archiveManager">
+        <div class="panel-head"><div><p class="eyebrow">STORY ARCHIVE</p><h2>Expired Stories</h2></div><span class="badge">ARCHIVE</span></div>
+        <div class="cards-list" id="archiveList"></div>
+      </section>
+
+      <section class="panel highlight-v4" id="highlightManager">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">INSTAGRAM-STYLE MANAGER</p>
+            <h2>Highlights V4</h2>
+          </div>
+          <span class="badge accent">PHOTO • VIDEO • TEXT</span>
+        </div>
+
+        <div class="notice-box">
+          <b>Workflow:</b> Highlight folder banao → <b>Add Media</b> se unlimited photo/video/text add karo → Open karke items manage/reorder karo. Story se bhi direct Highlight me save kar sakte ho.
+        </div>
+
+        <div class="highlight-create-grid">
+          <div class="field">
+            <label>Highlight Name</label>
+            <input id="hlName" maxlength="30" placeholder="Travel, Work, Prem Mart...">
+          </div>
+          <div class="field">
+            <label>Emoji</label>
+            <input id="hlEmoji" maxlength="8" value="⭐">
+          </div>
+          <div class="field">
+            <label>Cover Image</label>
+            <input id="hlCover" class="file-input" type="file" accept="image/*">
+          </div>
+        </div>
+        <button class="btn primary" id="addHighlight">＋ Create Highlight</button>
+
+        <div class="subhead">
+          <h3>Your Highlights</h3>
+          <span id="highlightCountLabel">0 highlights</span>
+        </div>
+        <div class="highlight-admin-grid" id="highlightList"></div>
+      </section>
+
+      <section class="panel" id="galleryManager">
+        <div class="panel-head"><div><p class="eyebrow">GALLERY ALBUMS</p><h2>Gallery</h2></div><span class="badge">EDIT / DELETE</span></div>
+        <div class="grid-3">
+          <div class="field"><label>Album</label><input id="galleryAlbum" maxlength="40" value="Memories"></div>
+          <div class="field"><label>Caption</label><input id="galleryCaption" maxlength="100" placeholder="A short caption"></div>
+          <div class="field"><label>Image</label><input id="galleryFile" class="file-input" type="file" accept="image/*"></div>
+        </div>
+        <button class="btn primary" id="addGallery">Upload Image</button>
+        <div class="gallery-admin" id="galleryList"></div>
+      </section>
+
+      <section class="panel" id="linksManager">
+        <div class="panel-head"><div><p class="eyebrow">LINK EDITOR</p><h2>Social & Project Links</h2></div><span class="badge">ADMIN EDITABLE</span></div>
+        <div class="grid-3">
+          <div class="field"><label>Type</label><select id="linkType"><option value="social">Social</option><option value="project">Project</option></select></div>
+          <div class="field"><label>Title</label><input id="linkTitle" placeholder="Instagram"></div>
+          <div class="field"><label>Icon / Emoji</label><input id="linkIcon" value="↗"></div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>Subtitle</label><input id="linkSubtitle" placeholder="@username / description"></div>
+          <div class="field"><label>URL</label><input id="linkUrl" placeholder="https://..."></div>
+        </div>
+        <button class="btn primary" id="addLinkBtn">Add Link</button>
+        <div class="cards-list" id="linksList" style="margin-top:14px"></div>
+      </section>
+
+      <section class="panel" id="messagesManager">
+        <div class="panel-head"><div><p class="eyebrow">INBOX</p><h2>Guest Messages</h2></div><span class="badge" id="messageBadge">0 MESSAGES</span></div>
+        <div class="cards-list" id="messageList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><p class="eyebrow">ANALYTICS</p><h2>Link Performance</h2></div></div>
+        <div class="cards-list" id="statsList"></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal" id="highlightPicker">
+    <div class="modal-card">
+      <div class="modal-head"><div><p class="eyebrow">SAVE STORY</p><h3>Add to Highlight</h3></div><button id="closeHighlightPicker">×</button></div>
+      <select id="storyHighlightSelect"></select>
+      <div class="action-row"><button class="btn primary full" id="confirmStoryHighlight">Save to Highlight</button></div>
+    </div>
+  </div>
+
+
+  <div class="modal" id="highlightManagerModal">
+    <div class="modal-card wide-modal">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">HIGHLIGHT CONTENT</p>
+          <h3 id="hmTitle">Highlight</h3>
+          <p class="muted" id="hmMeta"></p>
+        </div>
+        <button id="closeHighlightManager">×</button>
+      </div>
+
+      <div class="hm-toolbar">
+        <div class="field">
+          <label>Type</label>
+          <select id="hmType">
+            <option value="image">📷 Image</option>
+            <option value="video">🎬 Video</option>
+            <option value="text">✍ Text</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Photo / Video</label>
+          <input id="hmFile" class="file-input" type="file" accept="image/*,video/*">
+        </div>
+        <div class="field">
+          <label>Caption / Text</label>
+          <input id="hmText" maxlength="300" placeholder="Caption or text slide">
+        </div>
+        <button class="btn blue hm-add-btn" id="hmAddItem">＋ Add Item</button>
+      </div>
+
+      <div class="hm-cover-row">
+        <div>
+          <b>Change Cover</b>
+          <small>Optional — current cover remains if no new image selected.</small>
+        </div>
+        <input id="hmCoverFile" class="file-input" type="file" accept="image/*">
+        <button class="btn ghost" id="hmSaveCover">Update Cover</button>
+      </div>
+
+      <div class="subhead">
+        <h3>Items</h3>
+        <span id="hmItemCount">0 items</span>
+      </div>
+      <div class="hm-item-grid" id="hmItemList"></div>
+    </div>
+  </div>
+
+  
+  <div class="modal install-guide" id="installGuide">
+    <div class="modal-card install-card">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">IPHONE INSTALL</p>
+          <h3>Install Bio Admin App</h3>
+        </div>
+        <button id="closeInstallGuide">×</button>
+      </div>
+      <div class="install-steps">
+        <div><b>1</b><span>Safari me ye Admin page kholo.</span></div>
+        <div><b>2</b><span>Niche/upper Share button <strong>□↑</strong> dabao.</span></div>
+        <div><b>3</b><span><strong>Add to Home Screen</strong> choose karo.</span></div>
+        <div><b>4</b><span>Name “Bio Admin” rehne do aur <strong>Add</strong> dabao.</span></div>
+      </div>
+      <p class="muted">Home Screen par HK Bio Admin icon aa jayega aur app standalone mode me khulega.</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="admin.js"></script>
+  <script src="pwa.js"></script>
+</body>
+</html>
