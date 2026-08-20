@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Harekrishna Patel - Personal Social Bio">
+  <title>Harekrishna Patel | Link in Bio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand-mini"><span class="status-dot"></span> HAREKRISHNA</div>
+      <div class="top-actions">
+        <button class="icon-btn" id="themeBtn" title="Theme">☾</button>
+        <button class="icon-btn" id="shareTopBtn" title="Share">↗</button>
+      </div>
+    </header>
+
+    <section class="hero card">
+      <div class="profile-wrap" id="storyProfile" role="button" tabindex="0">
+        <div class="story-ring no-story" id="storyRing">
+          <img src="profile.jpeg" alt="Harekrishna Patel" class="avatar">
+        </div>
+        <span class="story-badge" id="storyBadge">+</span>
+      </div>
+
+      <h1>Harekrishna Patel <span class="verify">✓</span></h1>
+      <p class="tagline" id="publicProfession">Web Creator • Tech Enthusiast • Inventory Professional</p>
+
+      <div class="meta-row">
+        <span>📍 India</span>
+        <span>● Available</span>
+      </div>
+
+      <div class="note-card">
+        <span class="note-label">NOTE</span>
+        <span id="noteText">Building something new 🚀</span>
+      </div>
+
+      <div class="hero-actions">
+        <a class="primary-btn" data-track="Email" href="mailto:pharekrishna09@gmail.com">✉ Email Me</a>
+        <button class="secondary-btn" id="shareBtn">↗ Share Profile</button>
+      </div>
+    </section>
+
+    <section class="announcement-bar card" id="announcementBar" style="display:none">
+      <span>📌</span><b id="announcementText"></b>
+    </section>
+
+    <section class="section" id="highlightsSection">
+      <div class="section-head"><h2>Highlights</h2><span>Tap to view</span></div>
+      <div class="highlight-strip" id="highlightStrip"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Featured Projects</h2><span>My work</span></div>
+      <div class="project-grid" id="projectGrid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Connect</h2><span>Social</span></div>
+      <div class="social-grid" id="socialGrid"></div>
+    </section>
+
+    <section class="section card about-card">
+      <div class="section-head"><h2>About Me</h2><span>Profile</span></div>
+      <p>I’m <b>Harekrishna Patel</b>, a technology-focused learner with experience in inventory & stock management and a strong interest in building practical digital products and web experiences.</p>
+      <div class="skills">
+        <span>HTML</span><span>CSS</span><span>JavaScript</span><span>Supabase</span>
+        <span>GitHub Pages</span><span>MS Excel</span><span>Data Handling</span><span>Inventory</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>Professional</h2><span>Snapshot</span></div>
+      <div class="info-grid">
+        <article><span>🎓</span><b>Education</b><small>B.Sc. Zoology (Honours)</small></article>
+        <article><span>📦</span><b>Experience</b><small>Stock & Inventory Operations</small></article>
+        <article><span>🧑‍💻</span><b>Web Projects</b><small>Practical tools & websites</small></article>
+        <article><span>✨</span><b>Interests</b><small>Tech, design & automation</small></article>
+      </div>
+    </section>
+
+    <section class="section" id="gallerySection">
+      <div class="section-head"><h2>Gallery</h2><span>Memories</span></div>
+      <div class="gallery" id="gallery"></div>
+    </section>
+
+    <section class="section card music-card" id="musicCard">
+      <div class="music-left">
+        <div class="disc">♫</div>
+        <div><small>NOW PLAYING</small><b id="musicTitle">Favourite Music</b><span id="musicState">No music added</span></div>
+      </div>
+      <div class="music-controls">
+        <button id="musicPrevBtn" class="music-btn" title="Previous">‹</button>
+        <button id="musicBtn" class="music-btn">▶</button>
+        <button id="musicNextBtn" class="music-btn" title="Next">›</button>
+      </div>
+      <audio id="audio"></audio>
+    </section>
+
+    <section class="section stats-card card">
+      <div><b id="viewCount">0</b><span>Profile Views</span></div>
+      <div><b id="likeCount">0</b><span>Likes</span></div>
+      <button id="likeBtn">♡ Like Profile</button>
+    </section>
+
+    <section class="section card message-card">
+      <div class="section-head"><h2>Guest Message</h2><span>Say hello</span></div>
+      <textarea id="guestMessage" maxlength="180" placeholder="Write a short message..."></textarea>
+      <button class="primary-btn full" id="saveMessageBtn">Send Message</button>
+    </section>
+
+    <section class="section">
+      <div class="qr-card card">
+        <div><b>Share my profile</b><small>Send this bio page to anyone.</small></div>
+        <button class="secondary-btn" id="copyBtn">Copy Link</button>
+      </div>
+    </section>
+
+    <footer>
+      <b>Harekrishna Patel</b>
+      <span>Personal Social Bio • <span id="year"></span></span>
+      <a href="admin.html">Admin</a>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="story-modal" id="storyModal">
+    <div class="story-shell">
+      <div class="story-bars" id="storyBars"></div>
+      <div class="story-top">
+        <div class="story-user">
+          <img src="profile.jpeg" alt="">
+          <div><b>Harekrishna Patel</b><small id="storyTime">Story</small></div>
+        </div>
+        <button id="closeStory">×</button>
+      </div>
+      <div class="story-media" id="storyMedia"></div>
+      <button class="story-nav prev" id="prevStory">‹</button>
+      <button class="story-nav next" id="nextStory">›</button>
+    </div>
+  </div>
+
+  <div class="highlight-modal" id="highlightModal">
+    <div class="highlight-view">
+      <button class="modal-close" id="closeHighlight">×</button>
+      <div id="highlightContent"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
